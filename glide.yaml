@@ -1,0 +1,14 @@
+package: github.com/astronoka/glados
+import:
+- package: github.com/Sirupsen/logrus
+  version: ~0.11.0
+- package: github.com/gin-gonic/gin
+  version: ~1.1.4
+- package: github.com/joho/godotenv
+  version: ~1.0.0
+- package: github.com/jinzhu/gorm
+  version: ~1.0.0
+  subpackages:
+  - dialects/mysql
+- package: github.com/naoina/migu
+- package: github.com/nlopes/slack

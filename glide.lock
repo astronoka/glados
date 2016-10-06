@@ -1,0 +1,51 @@
+hash: 36402587ad5d2445cb916438f3253f766514b683e4745b3304c23e31b6f128c8
+updated: 2016-12-17T22:09:35.420752371+09:00
+imports:
+- name: github.com/astronoka/slack
+  version: 152f03ff9cd1cdc12615b65890af3fa4a996f4a0
+- name: github.com/gin-gonic/gin
+  version: e2212d40c62a98b388a5eb48ecbdcf88534688ba
+  subpackages:
+  - binding
+  - render
+- name: github.com/go-sql-driver/mysql
+  version: 8f6c67f0228a4a6a962008d6c3d1e694e4532e71
+- name: github.com/golang/protobuf
+  version: 2402d76f3d41f928c7902a765dfc872356dd3aad
+  subpackages:
+  - proto
+- name: github.com/jinzhu/gorm
+  version: 5174cc5c242a728b435ea2be8a2f7f998e15429b
+  subpackages:
+  - dialects/mysql
+- name: github.com/jinzhu/inflection
+  version: 74387dc39a75e970e7a3ae6a3386b5bd2e5c5cff
+- name: github.com/joho/godotenv
+  version: a01a834e1654b4c9ca5b3ad05159445cc9c7ad08
+- name: github.com/manucorporat/sse
+  version: ee05b128a739a0fb76c7ebd3ae4810c1de808d6d
+- name: github.com/mattn/go-isatty
+  version: 30a891c33c7cde7b02a981314b4228ec99380cca
+- name: github.com/naoina/go-stringutil
+  version: 6b638e95a32d0c1131db0e7fe83775cbea4a0d0b
+- name: github.com/naoina/migu
+  version: 5703c34cfdb8f344599d18e92c532e7396d13223
+  subpackages:
+  - dialect
+- name: github.com/nlopes/slack
+  version: e595e9d8590a04ff76407e4e7d1791d25b095c66
+- name: github.com/Sirupsen/logrus
+  version: d26492970760ca5d33129d2d799e34be5c4782eb
+- name: golang.org/x/net
+  version: f315505cf3349909cdf013ea56690da34e96a451
+  subpackages:
+  - context
+- name: golang.org/x/sys
+  version: 30237cf4eefd639b184d1f2cb77a581ea0be8947
+  subpackages:
+  - unix
+- name: gopkg.in/go-playground/validator.v8
+  version: c193cecd124b5cc722d7ee5538e945bdb3348435
+- name: gopkg.in/yaml.v2
+  version: a5b47d31c556af34a302ce5d659e6fea44d90de0
+testImports: []

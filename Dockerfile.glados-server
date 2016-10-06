@@ -1,0 +1,6 @@
+From golang:1.7.4
+#FROM alpine:latest
+
+WORKDIR "/opt"
+ADD _build/bin/glados-server /opt/glados-server
+CMD ["/opt/glados-server"]
