@@ -27,6 +27,10 @@ func (p *program) Initialize(c glados.Context) {
 	c.ChatAdapter().Respond(`(?i)ping$`, sayPong)
 }
 
+func sayPong(adapter glados.ChatAdapter, message *glados.ChatMessageEvent) {
+	adapter.PostTextMessage(message.Channel, "@"+message.User+" pong")
+}
+
 func (p *program) convertGithubName2ChatName(githubName string) string {
 	if name, exist := p.nameTable[githubName]; exist {
 		return name
