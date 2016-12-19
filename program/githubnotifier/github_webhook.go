@@ -19,51 +19,70 @@ import (
 	"github.com/astronoka/glados/github"
 )
 
-func notifyEvent(p *program, c glados.Context, secret string) glados.RequestHandler {
+// GitHubEventConverter is translate event to message
+type GitHubEventConverter interface {
+	BuildPullRequestEventMessage(event *github.PullRequestEvent) *glados.ChatMessage
+	BuildIssueCommentEventMessage(event *github.IssueCommentEvent) *glados.ChatMessage
+	BuildPullRequestReviewCommentEventMessage(event *github.PullRequestReviewCommentEvent) *glados.ChatMessage
+}
+
+// NotifyEvent is create request handler
+func NotifyEvent(context glados.Context, converter GitHubEventConverter, secret string) glados.RequestHandler {
 	return func(rc glados.RequestContext) {
-		status, message := notifyEventToChatAdapter(p, c, rc, secret)
-		rc.JSON(status, glados.H{
-			"message": message,
+		event, status, message := buildEventFromRequest(context, rc, secret)
+		if event == nil {
+			rc.JSON(status, glados.H{
+				"message": message,
+			})
+			return
+		}
+
+		destination := rc.Param("destination")
+		notifyEventToChatAdapter(context, destination, event, converter)
+		rc.JSON(http.StatusOK, glados.H{
+			"message": "ok",
 		})
 	}
 }
 
-func notifyEventToChatAdapter(p *program, c glados.Context, rc glados.RequestContext, secret string) (int, string) {
+func buildEventFromRequest(context glados.Context, rc glados.RequestContext, secret string) (github.Event, int, string) {
 	signature := strings.TrimSpace(rc.Header("X-Hub-Signature"))
 	maxSize := int64(1024 * 1024 * 5)
 	reader := io.LimitReader(rc.RequestBody(), maxSize+1)
 	body, err := ioutil.ReadAll(reader)
 	if err != nil {
-		return http.StatusBadRequest, err.Error()
+		return nil, http.StatusBadRequest, "githubnotifier: " + err.Error()
 	}
 	if int64(len(body)) > maxSize {
-		return http.StatusBadRequest, "githubnotifier: post body too large"
+		return nil, http.StatusBadRequest, "githubnotifier: post body too large"
 	}
 
 	if !verifySignature(secret, signature, body) {
-		return http.StatusUnauthorized, "githubnotifier: invalid signature"
+		return nil, http.StatusUnauthorized, "githubnotifier: invalid signature"
 	}
 
 	eventType := rc.Header("X-GitHub-Event")
 	if eventType == "" {
-		return http.StatusBadRequest, "githubnotifier: event type required"
+		return nil, http.StatusBadRequest, "githubnotifier: event type required"
 	}
 
 	if eventType == "ping" {
-		return http.StatusOK, "ok"
+		return nil, http.StatusOK, "ok"
 	}
 
-	destination := rc.Param("destination")
 	event, err := github.BuildEvent(eventType, body)
 	if err != nil {
-		c.Logger().Infoln("githubnotifier: " + err.Error())
-		return http.StatusAccepted, "githubnotifier: " + err.Error()
+		context.Logger().Infoln("githubnotifier: " + err.Error())
+		return nil, http.StatusAccepted, "githubnotifier: unsupported event"
 	}
-	message := buildNotifyMessage(p, c, event)
+	return event, http.StatusOK, "ok"
+}
+
+func notifyEventToChatAdapter(context glados.Context, destination string, event github.Event, converter GitHubEventConverter) {
+	message := buildNotifyMessage(converter, event)
 	if message != nil {
-		c.ChatAdapter().PostMessage(destination, message)
+		context.ChatAdapter().PostMessage(destination, message)
 	}
-	return http.StatusOK, "ok"
 }
 
 func verifySignature(secret string, signature string, body []byte) bool {
@@ -95,81 +114,17 @@ func random() string {
 	return strconv.FormatUint(n, 36)
 }
 
-func buildNotifyMessage(p *program, c glados.Context, event github.Event) *glados.ChatMessage {
+func buildNotifyMessage(converter GitHubEventConverter, event github.Event) *glados.ChatMessage {
 	switch e := event.(type) {
 	case *github.PullRequestEvent:
-		return buildPullrequestEventMessage(p, e)
+		return converter.BuildPullRequestEventMessage(e)
 	case *github.IssueCommentEvent:
-		return buildIssueCommentEventMessage(p, e)
+		return converter.BuildIssueCommentEventMessage(e)
 	case *github.PullRequestReviewCommentEvent:
-		return buildPullRequestReviewCommentEventMessage(p, e)
+		return converter.BuildPullRequestReviewCommentEventMessage(e)
 	}
 	return &glados.ChatMessage{
 		Title: "Unsupported",
 		Text:  fmt.Sprintf("event %s not supported yet", event.Type()),
-	}
-}
-
-func buildPullrequestEventMessage(p *program, event *github.PullRequestEvent) *glados.ChatMessage {
-	author := glados.MessageAuthor{
-		Name:    event.PullRequest.User.Login,
-		Subname: p.convertGithubName2ChatName(event.PullRequest.User.Login),
-		Link:    event.PullRequest.User.HTMLURL,
-		IconURL: event.PullRequest.User.AvatarURL,
-	}
-	text := p.convertGithubName2ChatNameInText(event.PullRequest.Body) +
-		"\n" +
-		fmt.Sprintf(`<%s|github>`, event.PullRequest.HTMLURL)
-	return &glados.ChatMessage{
-		Author: author,
-		Title:  fmt.Sprintf("%s: pull reques %s", event.Repository.FullName, event.Status()),
-		Text:   text,
-		Color:  "#000000",
-	}
-}
-
-func buildIssueCommentEventMessage(p *program, event *github.IssueCommentEvent) *glados.ChatMessage {
-	if event.Action != "created" {
-		return nil
-	}
-	text := "issue owner: @" + p.convertGithubName2ChatName(event.Issue.User.Login) +
-		"\n" +
-		p.convertGithubName2ChatNameInText(event.Comment.Body) +
-		"\n" +
-		fmt.Sprintf(`<%s|github>`, event.Comment.HTMLURL)
-	author := glados.MessageAuthor{
-		Name:    event.Sender.Login,
-		Subname: p.convertGithubName2ChatName(event.Sender.Login),
-		Link:    event.Sender.HTMLURL,
-		IconURL: event.Sender.AvatarURL,
-	}
-	return &glados.ChatMessage{
-		Author: author,
-		Title:  fmt.Sprintf("%s: issue comment created", event.Repository.FullName),
-		Text:   text,
-		Color:  "#000000",
-	}
-}
-
-func buildPullRequestReviewCommentEventMessage(p *program, event *github.PullRequestReviewCommentEvent) *glados.ChatMessage {
-	if event.Action != "created" {
-		return nil
-	}
-	author := glados.MessageAuthor{
-		Name:    event.Sender.Login,
-		Subname: p.convertGithubName2ChatName(event.Sender.Login),
-		Link:    event.Sender.HTMLURL,
-		IconURL: event.Sender.AvatarURL,
-	}
-	text := "pull request owner: @" + p.convertGithubName2ChatName(event.PullRequest.User.Login) +
-		"\n" +
-		p.convertGithubName2ChatNameInText(event.Comment.Body) +
-		"\n" +
-		fmt.Sprintf(`<%s|github>`, event.Comment.HTMLURL)
-	return &glados.ChatMessage{
-		Author: author,
-		Title:  fmt.Sprintf("%s: review comment created", event.Repository.FullName),
-		Text:   text,
-		Color:  "#000000",
 	}
 }
