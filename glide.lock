@@ -1,8 +1,6 @@
-hash: 36402587ad5d2445cb916438f3253f766514b683e4745b3304c23e31b6f128c8
-updated: 2016-12-17T22:09:35.420752371+09:00
+hash: daecf28c22e822abd6a2d39e41b1e6e82918822d4dff861000b8a4aaae62ac8f
+updated: 2017-01-17T16:30:10.022748676+09:00
 imports:
-- name: github.com/astronoka/slack
-  version: 152f03ff9cd1cdc12615b65890af3fa4a996f4a0
 - name: github.com/gin-gonic/gin
   version: e2212d40c62a98b388a5eb48ecbdcf88534688ba
   subpackages:
@@ -40,6 +38,7 @@ imports:
   version: f315505cf3349909cdf013ea56690da34e96a451
   subpackages:
   - context
+  - websocket
 - name: golang.org/x/sys
   version: 30237cf4eefd639b184d1f2cb77a581ea0be8947
   subpackages:
