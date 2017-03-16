@@ -38,10 +38,13 @@ $(GLADOS_SERVER_BIN): $(BUILD_CONTAINER_FILE) $(VENDORING_FILE) $(GLADOS_SRCS)
 run-glados-server:
 	$(WITH_BUILD_CONTAINER) reflex -r '\.go$$' -s -- sh -c 'go run -v -race example/cmd/glados-server/main.go'
 
+glide.lock: glide.yaml
+	$(WITH_BUILD_CONTAINER) glide update -v
+
 #
 # vendoring
 #
-$(VENDORING_FILE): glide.yaml
+$(VENDORING_FILE): glide.lock
 	$(WITH_BUILD_CONTAINER) glide install -v \
 		&& mkdir -p $(@D) \
 		&& touch $(VENDORING_FILE)

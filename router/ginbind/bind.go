@@ -2,7 +2,7 @@ package ginbind
 
 import (
 	"encoding/json"
-	"io"
+	"net/http"
 	"time"
 
 	"github.com/astronoka/glados"
@@ -70,6 +70,6 @@ func (w ginContextWrapper) Header(key string) string {
 	return w.Request.Header.Get(key)
 }
 
-func (w ginContextWrapper) RequestBody() io.ReadCloser {
-	return w.Request.Body
+func (w ginContextWrapper) Request() *http.Request {
+	return w.Request
 }

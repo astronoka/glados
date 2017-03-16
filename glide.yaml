@@ -12,3 +12,8 @@ import:
   - dialects/mysql
 - package: github.com/naoina/migu
 - package: github.com/nlopes/slack
+- package: github.com/google/go-github
+- package: github.com/pkg/errors
+- package: github.com/google/go-querystring
+  subpackages:
+  - query
