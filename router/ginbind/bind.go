@@ -66,10 +66,6 @@ type ginContextWrapper struct {
 	*gin.Context
 }
 
-func (w ginContextWrapper) Header(key string) string {
-	return w.Request.Header.Get(key)
-}
-
 func (w ginContextWrapper) Request() *http.Request {
-	return w.Request
+	return w.Context.Request
 }
