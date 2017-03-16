@@ -1,6 +1,6 @@
 package glados
 
-import "io"
+import "net/http"
 
 // H is hash map
 type H map[string]interface{}
@@ -9,6 +9,6 @@ type H map[string]interface{}
 type RequestContext interface {
 	Header(string) string
 	Param(string) string
-	RequestBody() io.ReadCloser
+	Request() *http.Request
 	JSON(int, interface{})
 }

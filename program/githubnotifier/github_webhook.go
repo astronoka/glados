@@ -1,29 +1,18 @@
 package githubnotifier
 
 import (
-	"crypto/hmac"
 	"crypto/rand"
-	"crypto/sha1"
-	"crypto/sha256"
 	"encoding/binary"
-	"encoding/hex"
-	"fmt"
-	"hash"
-	"io"
-	"io/ioutil"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/astronoka/glados"
-	"github.com/astronoka/glados/github"
+	"github.com/google/go-github/github"
 )
 
 // GitHubEventConverter is translate event to message
 type GitHubEventConverter interface {
-	BuildPullRequestEventMessage(event *github.PullRequestEvent) *glados.ChatMessage
-	BuildIssueCommentEventMessage(event *github.IssueCommentEvent) *glados.ChatMessage
-	BuildPullRequestReviewCommentEventMessage(event *github.PullRequestReviewCommentEvent) *glados.ChatMessage
+	ConvertEventToChatMessage(event interface{}) *glados.ChatMessage
 }
 
 // NotifyEvent is create request handler
@@ -45,86 +34,34 @@ func NotifyEvent(context glados.Context, converter GitHubEventConverter, secret 
 	}
 }
 
-func buildEventFromRequest(context glados.Context, rc glados.RequestContext, secret string) (github.Event, int, string) {
-	signature := strings.TrimSpace(rc.Header("X-Hub-Signature"))
-	maxSize := int64(1024 * 1024 * 5)
-	reader := io.LimitReader(rc.RequestBody(), maxSize+1)
-	body, err := ioutil.ReadAll(reader)
+func buildEventFromRequest(context glados.Context, rc glados.RequestContext, secret string) (interface{}, int, string) {
+	payload, err := github.ValidatePayload(rc.Request(), []byte(secret))
 	if err != nil {
-		return nil, http.StatusBadRequest, "githubnotifier: " + err.Error()
-	}
-	if int64(len(body)) > maxSize {
-		return nil, http.StatusBadRequest, "githubnotifier: post body too large"
+		return nil, http.StatusBadRequest, "githubnotifier: validate payload failed:" + err.Error()
 	}
 
-	if !verifySignature(secret, signature, body) {
-		return nil, http.StatusUnauthorized, "githubnotifier: invalid signature"
-	}
-
-	eventType := rc.Header("X-GitHub-Event")
-	if eventType == "" {
-		return nil, http.StatusBadRequest, "githubnotifier: event type required"
+	eventType := github.WebHookType(rc.Request())
+	event, err := github.ParseWebHook(eventType, payload)
+	if err != nil {
+		context.Logger().Infoln("githubnotifier: " + err.Error())
+		return nil, http.StatusAccepted, "githubnotifier: unsupported event"
 	}
 
 	if eventType == "ping" {
 		return nil, http.StatusOK, "ok"
 	}
-
-	event, err := github.BuildEvent(eventType, body)
-	if err != nil {
-		context.Logger().Infoln("githubnotifier: " + err.Error())
-		return nil, http.StatusAccepted, "githubnotifier: unsupported event"
-	}
 	return event, http.StatusOK, "ok"
 }
 
-func notifyEventToChatAdapter(context glados.Context, destination string, event github.Event, converter GitHubEventConverter) {
-	message := buildNotifyMessage(converter, event)
+func notifyEventToChatAdapter(context glados.Context, destination string, event interface{}, converter GitHubEventConverter) {
+	message := converter.ConvertEventToChatMessage(event)
 	if message != nil {
 		context.ChatAdapter().PostMessage(destination, message)
 	}
-}
-
-func verifySignature(secret string, signature string, body []byte) bool {
-	if signature == "" {
-		return false
-	}
-	signatures := strings.Split(signature, "=")
-	if len(signatures) != 2 {
-		return false
-	}
-	hashType := signatures[0]
-	hashString := signatures[1]
-	hmac := hmac.New(newHash(hashType), []byte(secret))
-	hmac.Write(body)
-	hmacString := hex.EncodeToString(hmac.Sum(nil))
-	return hashString == hmacString
-}
-
-func newHash(hashType string) func() hash.Hash {
-	if hashType == "sha1" {
-		return sha1.New
-	}
-	return sha256.New
 }
 
 func random() string {
 	var n uint64
 	binary.Read(rand.Reader, binary.LittleEndian, &n)
 	return strconv.FormatUint(n, 36)
-}
-
-func buildNotifyMessage(converter GitHubEventConverter, event github.Event) *glados.ChatMessage {
-	switch e := event.(type) {
-	case *github.PullRequestEvent:
-		return converter.BuildPullRequestEventMessage(e)
-	case *github.IssueCommentEvent:
-		return converter.BuildIssueCommentEventMessage(e)
-	case *github.PullRequestReviewCommentEvent:
-		return converter.BuildPullRequestReviewCommentEventMessage(e)
-	}
-	return &glados.ChatMessage{
-		Title: "Unsupported",
-		Text:  fmt.Sprintf("event %s not supported yet", event.Type()),
-	}
 }

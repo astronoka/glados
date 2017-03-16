@@ -1,5 +1,5 @@
-hash: daecf28c22e822abd6a2d39e41b1e6e82918822d4dff861000b8a4aaae62ac8f
-updated: 2017-01-17T16:30:10.022748676+09:00
+hash: ea392a3ce28db611bdde4520096f56ff5509d62a2d367f15cddd75d04767b2fd
+updated: 2017-03-16T09:59:02.592180308+09:00
 imports:
 - name: github.com/gin-gonic/gin
   version: e2212d40c62a98b388a5eb48ecbdcf88534688ba
@@ -12,6 +12,14 @@ imports:
   version: 2402d76f3d41f928c7902a765dfc872356dd3aad
   subpackages:
   - proto
+- name: github.com/google/go-github
+  version: 839082db564f53df5b8b386f217c7c217b5a624f
+  subpackages:
+  - github
+- name: github.com/google/go-querystring
+  version: 53e6ce116135b80d037921a7fdd5138cf32d7a8a
+  subpackages:
+  - query
 - name: github.com/jinzhu/gorm
   version: 5174cc5c242a728b435ea2be8a2f7f998e15429b
   subpackages:
@@ -32,17 +40,29 @@ imports:
   - dialect
 - name: github.com/nlopes/slack
   version: e595e9d8590a04ff76407e4e7d1791d25b095c66
+- name: github.com/pkg/errors
+  version: 248dadf4e9068a0b3e79f02ed0a610d935de5302
 - name: github.com/Sirupsen/logrus
-  version: d26492970760ca5d33129d2d799e34be5c4782eb
+  version: ba1b36c82c5e05c4f912a88eab0dcd91a171688f
 - name: golang.org/x/net
   version: f315505cf3349909cdf013ea56690da34e96a451
   subpackages:
   - context
   - websocket
 - name: golang.org/x/sys
-  version: 30237cf4eefd639b184d1f2cb77a581ea0be8947
+  version: d75a52659825e75fff6158388dddc6a5b04f9ba5
   subpackages:
   - unix
+- name: google.golang.org/appengine
+  version: 08a149cfaee099e6ce4be01c0113a78c85ee1dee
+  subpackages:
+  - internal
+  - internal/app_identity
+  - internal/base
+  - internal/datastore
+  - internal/log
+  - internal/modules
+  - internal/remote_api
 - name: gopkg.in/go-playground/validator.v8
   version: c193cecd124b5cc722d7ee5538e945bdb3348435
 - name: gopkg.in/yaml.v2
